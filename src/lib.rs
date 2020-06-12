@@ -147,7 +147,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 
 fn view(model: &Model) -> Node<Msg> {
     div![
-        "I'm a placeholder"
+        raw![include_str!("../template.html")]
     ]
 }
 
