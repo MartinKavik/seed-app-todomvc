@@ -1,6 +1,8 @@
 #![allow(clippy::wildcard_imports)]
 
 use seed::{prelude::*, *};
+use std::collections::BTreeMap;
+use ulid::Ulid;
 
 // ------ ------
 //     Init
@@ -15,7 +17,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
 // ------ ------
 
 struct Model {
-    todos: BtreeMap<Ulid, Todo>,
+    todos: BTreeMap<Ulid, Todo>,
     new_todo_title: String,
     selected_todo: Option<SelectedTodo>,
     filter: Filter,
@@ -44,7 +46,6 @@ enum Filter {
 //    Update
 // ------ ------
 
-#[derive(Copy, Clone)]
 enum Msg {
     UrlChanged(subs::UrlChanged),
     NewTodoTitleChanged(String),
@@ -74,13 +75,8 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 //     View
 // ------ ------
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
 fn view(model: &Model) -> Node<Msg> {
-    div![
-        "This is a counter: ",
-        C!["counter"],
-        button![model, ev(Ev::Click, |_| Msg::Increment),],
-    ]
+    div![]
 }
 
 // ------ ------
