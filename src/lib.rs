@@ -9,7 +9,13 @@ use ulid::Ulid;
 // ------ ------
 
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
-    Model::default()
+    Model {
+        todos: BTreeMap::new(),
+        new_todo_title: String::new(),
+        selected_todo: None,
+        filter: Filter::All,
+        base_url: Url::new(),
+    }
 }
 
 // ------ ------
