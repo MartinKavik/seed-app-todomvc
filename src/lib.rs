@@ -67,7 +67,42 @@ enum Msg {
 
 fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
     match msg {
-        Msg::Increment => *model += 1,
+        Msg::UrlChanged(subs::UrlChanged(url)) => {
+            log!("UrlChanged", url);
+        }
+        Msg::NewTodoTitleChanged(title) => {
+            log!("NewTodoTitleChanged", title);
+        }
+     
+        // ------ Basic Todo operations ------
+        Msg::CreateTodo => {
+            log!("CreateTodo");
+        }
+        Msg::ToggleTodo(id) => {
+            log!("ToggleTodo");
+        }
+        Msg::RemoveTodo(id) => {
+            log!("RemoveTodo");
+        }
+        
+        // ------ Bulk operations ------
+        Msg::CheckOrUncheckAll => {
+            log!("CheckOrUncheckAll");
+        }
+        Msg::ClearCompleted => {
+            log!("ClearCompleted");
+        }
+        
+        // ------ Selection ------
+        Msg::SelectTodo(opt_id) => {
+            log!("SelectTodo", opt_id);
+        },
+        Msg::SelectedTodoTitleChanged(title) => {
+            log!("SelectedTodoTitleChanged", title);
+        },
+        Msg::SaveSelectedTodo => {
+            log!("SaveSelectedTodo");
+        }
     }
 }
 
@@ -76,7 +111,9 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Node<Msg> {
-    div![]
+    div![
+        "I'm a placeholder"
+      ]
 }
 
 // ------ ------
