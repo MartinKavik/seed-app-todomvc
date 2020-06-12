@@ -16,7 +16,6 @@ crate-type = ["cdylib"]
 wasm-bindgen-test = "0.3.12"
 
 [dependencies]
-[dependencies]
 # TODO: Change to "ulid = "x.x.x" once https://github.com/dylanhart/ulid-rs/pull/28 is merged and a new `ulid` version released.
 ulid = { git = "https://github.com/MartinKavik/ulid-rs", branch = "feat/wasm_support" }
 # Referenced commit fixes base url and memory bugs in Seed 0.7.0
