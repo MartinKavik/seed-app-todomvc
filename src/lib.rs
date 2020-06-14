@@ -112,7 +112,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             log!("UrlChanged", url);
         }
         Msg::NewTodoTitleChanged(title) => {
-            log!("NewTodoTitleChanged", title);
+            model.new_todo_title = title;
         }
      
         // ------ Basic Todo operations ------
@@ -174,6 +174,7 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
                 At::AutoFocus => AtValue::None,
                 At::Value => new_todo_title,
             },
+            input_ev(Ev::Input, Msg::NewTodoTitleChanged),
         ]
     ]
 }
