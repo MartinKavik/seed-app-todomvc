@@ -45,14 +45,12 @@ impl Model {
             id: id_a,
             title: "I'm todo A".to_owned(),
             completed: false,
-            element: ElRef::new()
         });
 
         self.todos.insert(id_b, Todo {
             id: id_b,
             title: "I'm todo B".to_owned(),
             completed: true,
-            element: ElRef::new()
         });
 
         self.new_todo_title = "I'm a new todo title".to_owned();
@@ -60,6 +58,7 @@ impl Model {
         self.selected_todo = Some(SelectedTodo {
             id: id_b,
             title: "I'm better todo B".to_owned(),
+            input_element: ElRef::new(),
         });
         self
     }
@@ -69,12 +68,12 @@ struct Todo {
     id: Ulid,
     title: String,
     completed: bool,
-    element: ElRef<web_sys::HtmlElement>,
 }
 
 struct SelectedTodo {
     id: Ulid,
     title: String,
+    input_element: ElRef<web_sys::HtmlElement>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
@@ -204,12 +203,19 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
             let is_selected = Some(todo.id) == selected_todo.map(|selected_todo| selected_todo.id);
 
             li![C![IF!(todo.completed => "completed"), IF!(is_selected => "editing")],
+                el_key(&todo.id),
                 div![C!["view"],
                     input![C!["toggle"], attrs!{At::Type => "checkbox", At::Checked => todo.completed.as_at_value()}],
                     label![&todo.title],
                     button![C!["destroy"]],
                 ],
-                IF!(is_selected => input![C!["edit"], attrs!{At::Value => selected_todo.unwrap().title}]),
+                IF!(is_selected => {
+                    let selected_todo = selected_todo.unwrap();
+                    input![C!["edit"], 
+                        el_ref(&selected_todo.input_element), 
+                        attrs!{At::Value => selected_todo.title},
+                    ]
+                }),
             ]
         })
     ]
