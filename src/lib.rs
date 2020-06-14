@@ -176,14 +176,19 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 
 fn view_main(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>) -> Node<Msg> {
     section![C!["main"],
-        view_toggle_all(),
+        view_toggle_all(todos),
         view_todo_list(todos, selected_todo),
     ]
 }
 
-fn view_toggle_all() -> Vec<Node<Msg>> {
+fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
+    let all_completed = todos.values().all(|todo| todo.completed);
     vec![
-        input![C!["toggle-all"], attrs!{At::Id => "toggle-all", At::Type => "checkbox"}],
+        input![C!["toggle-all"], 
+            attrs!{
+                At::Id => "toggle-all", At::Type => "checkbox", At::Checked => all_completed.as_at_value()
+            }
+        ],
         label![attrs!{At::For => "toggle-all"}, "Mark all as complete"],
     ]
 }
