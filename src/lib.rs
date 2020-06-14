@@ -3,7 +3,11 @@
 #![allow(dead_code, unused_variables)]
 
 use seed::{prelude::*, *};
+
 use std::collections::BTreeMap;
+
+use strum_macros::EnumIter;
+use strum::IntoEnumIterator;
 use ulid::Ulid;
 
 // ------ ------
@@ -73,6 +77,7 @@ struct SelectedTodo {
     title: String,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
 enum Filter {
    All,
    Active,
@@ -152,7 +157,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
         view_header(&model.new_todo_title),
         IF!(not(model.todos.is_empty()) => vec![
             view_main(&model.todos, model.selected_todo.as_ref()), 
-            view_footer(),
+            view_footer(model.filter),
         ]),
     ]
 }
@@ -212,14 +217,14 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
 
 // ------ footer ------
 
-fn view_footer() -> Node<Msg> {
+fn view_footer(selected_filter: Filter) -> Node<Msg> {
     footer![C!["footer"],
         // This should be `0 items left` by default
         span![C!["todo-count"],
             strong!["0"],
             " item left",
         ],
-        view_filters(),
+        view_filters(selected_filter),
         // Hidden if no completed items are left ↓
         button![C!["clear-completed"],
             "Clear completed"
@@ -227,26 +232,21 @@ fn view_footer() -> Node<Msg> {
     ]
 }
 
-fn view_filters() -> Node<Msg> {
+fn view_filters(selected_filter: Filter) -> Node<Msg> {
     ul![C!["filters"],
-        li![
-            a![C!["selected"],
-                attrs!{At::Href => "#/"},
-                "All",
-            ],
-        ],
-        li![
-            a![
-                attrs!{At::Href => "#/active"},
-                "Active",
-            ],
-        ],
-        li![
-            a![
-                attrs!{At::Href => "#/completed"},
-                "Completed",
-            ],
-        ],
+        Filter::iter().map(|filter| {
+            let (link, title) = match filter {
+                Filter::All => ("#/", "All"),
+                Filter::Active => ("#/active", "Active"),
+                Filter::Completed => ("#/completed", "Completed"),
+            };
+            li![
+                a![C![IF!(filter == selected_filter => "selected")],
+                    attrs!{At::Href => link},
+                    title,
+                ],
+            ]
+        })
     ]
 }
 

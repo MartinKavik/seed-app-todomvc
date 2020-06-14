@@ -16,6 +16,8 @@ crate-type = ["cdylib"]
 wasm-bindgen-test = "0.3.13"
 
 [dependencies]
+strum = "0.18.0"
+strum_macros = "0.18.0"
 ulid = "0.3.3"
 # This commit points to Seed 0.7.0 with important fixes.
 # Replace with `seed = "0.8.0"` (or newer) once released.
