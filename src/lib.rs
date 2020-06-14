@@ -125,7 +125,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             }
         }
         Msg::RemoveTodo(id) => {
-            log!("RemoveTodo");
+            model.todos.remove(&id);
         }
         
         // ------ Bulk operations ------
@@ -213,7 +213,9 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
                         ev(Ev::Change, move |_| Msg::ToggleTodo(id))
                     ],
                     label![&todo.title],
-                    button![C!["destroy"]],
+                    button![C!["destroy"],
+                        ev(Ev::Click, move |_| Msg::RemoveTodo(id))
+                    ],
                 ],
                 IF!(is_selected => {
                     let selected_todo = selected_todo.unwrap();
