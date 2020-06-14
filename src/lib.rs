@@ -51,6 +51,8 @@ impl Model {
             element: ElRef::new()
         });
 
+        self.new_todo_title = "I'm a new todo title".to_owned();
+
         self.selected_todo = Some(SelectedTodo {
             id: id_b,
             title: "I'm better todo B".to_owned(),
@@ -146,12 +148,12 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
-    vec![
+    nodes![
         view_header(),
-        // This section should be hidden by default and shown when there are todos
-        view_main(),
-        // This footer should hidden by default and shown when there are todos
-        view_footer(),
+        IF!(not(model.todos.is_empty()) => vec![
+            view_main(), 
+            view_footer(),
+        ]),
     ]
 }
 
