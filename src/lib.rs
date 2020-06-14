@@ -151,7 +151,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(&model.new_todo_title),
         IF!(not(model.todos.is_empty()) => vec![
-            view_main(), 
+            view_main(&model.todos, model.selected_todo.as_ref()), 
             view_footer(),
         ]),
     ]
@@ -174,34 +174,28 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 
 // ------ main ------
 
-fn view_main() -> Node<Msg> {
+fn view_main(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>) -> Node<Msg> {
     section![C!["main"],
         input![C!["toggle-all"], attrs!{At::Id => "toggle-all", At::Type => "checkbox"}],
         label![attrs!{At::For => "toggle-all"}, "Mark all as complete"],
-        view_todo_list(),
+        view_todo_list(todos, selected_todo),
     ]
 }
 
-fn view_todo_list() -> Node<Msg> {
+fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>) -> Node<Msg> {
     ul![C!["todo-list"],
-        // These are here just to show the structure of the list items
-        // List items should get the class `editing` when editing and `completed` when marked as completed
-        li![C!["completed"],
-            div![C!["view"],
-                input![C!["toggle"], attrs!{At::Type => "checkbox", At::Checked => AtValue::None}],
-                label!["Taste JavaScript"],
-                button![C!["destroy"]],
-            ],
-            input![C!["edit"], attrs!{At::Value => "Create a TodoMVC template"}]
-        ],
-        li![
-            div![C!["view"],
-                input![C!["toggle"], attrs!{At::Type => "checkbox"}],
-                label!["Buy a unicorn"],
-                button![C!["destroy"]],
-            ],
-            input![C!["edit"], attrs!{At::Value => "Rule the web"}]
-        ]
+        todos.values().map(|todo| {
+            let is_selected = Some(todo.id) == selected_todo.map(|selected_todo| selected_todo.id);
+
+            li![C![IF!(todo.completed => "completed"), IF!(is_selected => "editing")],
+                div![C!["view"],
+                    input![C!["toggle"], attrs!{At::Type => "checkbox", At::Checked => todo.completed.as_at_value()}],
+                    label![&todo.title],
+                    button![C!["destroy"]],
+                ],
+                IF!(is_selected => input![C!["edit"], attrs!{At::Value => selected_todo.unwrap().title}]),
+            ]
+        })
     ]
 }
 
