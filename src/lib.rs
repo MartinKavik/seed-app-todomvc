@@ -145,9 +145,71 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 //     View
 // ------ ------
 
-fn view(model: &Model) -> Node<Msg> {
-    div![
-        raw![include_str!("../template.html")]
+fn view(model: &Model) -> Vec<Node<Msg>> {
+    vec![
+        header![C!["header"],
+            h1!["todos"],
+            input![C!["new-todo"],
+                attrs!{At::Placeholder => "What needs to be done?", At::AutoFocus => AtValue::None},
+            ]
+        ],
+        // This section should be hidden by default and shown when there are todos
+        section![C!["main"],
+            input![C!["toggle-all"], attrs!{At::Id => "toggle-all", At::Type => "checkbox"}],
+            label![attrs!{At::For => "toggle-all"}, "Mark all as complete"],
+            ul![C!["todo-list"],
+                // These are here just to show the structure of the list items
+                // List items should get the class `editing` when editing and `completed` when marked as completed
+                li![C!["completed"],
+                    div![C!["view"],
+                        input![C!["toggle"], attrs!{At::Type => "checkbox", At::Checked => AtValue::None}],
+                        label!["Taste JavaScript"],
+                        button![C!["destroy"]],
+                    ],
+                    input![C!["edit"], attrs!{At::Value => "Create a TodoMVC template"}]
+                ],
+                li![
+                    div![C!["view"],
+                        input![C!["toggle"], attrs!{At::Type => "checkbox"}],
+                        label!["Buy a unicorn"],
+                        button![C!["destroy"]],
+                    ],
+                    input![C!["edit"], attrs!{At::Value => "Rule the web"}]
+                ]
+            ]
+        ],
+        // This footer should hidden by default and shown when there are todos
+        footer![C!["footer"],
+            // This should be `0 items left` by default
+            span![C!["todo-count"],
+                strong!["0"],
+                " item left",
+            ],
+            ul![C!["filters"],
+                li![
+                    a![C!["selected"],
+                        attrs!{At::Href => "#/"},
+                        "All",
+                    ],
+                ],
+                li![
+                    a![
+                        attrs!{At::Href => "#/active"},
+                        "Active",
+                    ],
+                ],
+                li![
+                    a![
+                        attrs!{At::Href => "#/completed"},
+                        "Completed",
+                    ],
+                ],
+            ],
+            // Hidden if no completed items are left ↓
+            button![C!["clear-completed"],
+                "Clear completed"
+            ]
+        ]
     ]
 }
 
