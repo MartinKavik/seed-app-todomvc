@@ -149,7 +149,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
-        view_header(),
+        view_header(&model.new_todo_title),
         IF!(not(model.todos.is_empty()) => vec![
             view_main(), 
             view_footer(),
@@ -159,11 +159,15 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
 
 // ------ header ------
 
-fn view_header() -> Node<Msg> {
+fn view_header(new_todo_title: &str) -> Node<Msg> {
     header![C!["header"],
         h1!["todos"],
         input![C!["new-todo"],
-            attrs!{At::Placeholder => "What needs to be done?", At::AutoFocus => AtValue::None},
+            attrs!{
+                At::Placeholder => "What needs to be done?", 
+                At::AutoFocus => AtValue::None,
+                At::Value => new_todo_title,
+            },
         ]
     ]
 }
