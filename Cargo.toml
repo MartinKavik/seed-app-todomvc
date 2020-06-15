@@ -16,9 +16,10 @@ crate-type = ["cdylib"]
 wasm-bindgen-test = "0.3.13"
 
 [dependencies]
+serde = "1.0.112"
 strum = "0.18.0"
 strum_macros = "0.18.0"
-ulid = "0.3.3"
+ulid = { version = "0.3.3", features = ["serde"] }
 # This commit points to Seed 0.7.0 with important fixes.
 # Replace with `seed = "0.8.0"` (or newer) once released.
 seed = { git = "https://github.com/seed-rs/seed", rev = "0a538f0" }

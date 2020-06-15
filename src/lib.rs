@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use std::mem;
 use std::convert::TryFrom;
 
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
 use ulid::Ulid;
@@ -15,13 +16,15 @@ use ulid::Ulid;
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
 
+const STORAGE_KEY: &str = "todos-seed";
+
 // ------ ------
 //     Init
 // ------ ------
 
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     Model {
-        todos: BTreeMap::new(),
+        todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
         new_todo_title: String::new(),
         selected_todo: None,
         filter: Filter::All,
@@ -41,6 +44,7 @@ struct Model {
     base_url: Url,
 }
 
+#[derive(Deserialize, Serialize)]
 struct Todo {
     id: Ulid,
     title: String,
@@ -176,6 +180,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         }
     }
+    LocalStorage::insert(STORAGE_KEY, &model.todos).expect("save todos to LocalStorage");
 }
 
 // ------ ------
