@@ -5,6 +5,7 @@
 use seed::{prelude::*, *};
 
 use std::collections::BTreeMap;
+use std::mem;
 
 use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
@@ -149,7 +150,11 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             log!("CheckOrUncheckAll");
         }
         Msg::ClearCompleted => {
-            log!("ClearCompleted");
+            // TODO: Refactor with `BTreeMap::drain_filter` once stable.
+            model.todos = mem::take(&mut model.todos)
+                .into_iter()
+                .filter(|(_, todo)| not(todo.completed))
+                .collect();
         }
         
         // ------ Selection ------
@@ -261,7 +266,8 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter) -> Node<Ms
         view_filters(selected_filter),
         IF!(todos.values().any(|todo| todo.completed) =>
             button![C!["clear-completed"],
-                "Clear completed"
+                "Clear completed",
+                ev(Ev::Click, |_| Msg::ClearCompleted),
             ]
         )
     ]
