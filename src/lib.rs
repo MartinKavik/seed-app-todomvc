@@ -6,12 +6,14 @@ use seed::{prelude::*, *};
 
 use std::collections::BTreeMap;
 use std::mem;
+use std::convert::TryFrom;
 
 use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
 use ulid::Ulid;
 
 const ENTER_KEY: &str = "Enter";
+const ESCAPE_KEY: &str = "Escape";
 
 // ------ ------
 //     Init
@@ -76,7 +78,7 @@ struct Todo {
 struct SelectedTodo {
     id: Ulid,
     title: String,
-    input_element: ElRef<web_sys::HtmlElement>,
+    input_element: ElRef<web_sys::HtmlInputElement>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
@@ -112,7 +114,7 @@ enum Msg {
     SaveSelectedTodo,
  }
 
-fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
+fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::UrlChanged(subs::UrlChanged(url)) => {
             log!("UrlChanged", url);
@@ -162,8 +164,32 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         
         // ------ Selection ------
 
-        Msg::SelectTodo(opt_id) => {
-            log!("SelectTodo", opt_id);
+        Msg::SelectTodo(Some(id)) => {
+            if let Some(todo) = model.todos.get(&id) {
+                let input_element = ElRef::new();
+                
+                model.selected_todo = Some(SelectedTodo {
+                    id,
+                    title: todo.title.clone(),
+                    input_element: input_element.clone(),
+                });
+
+                let title_length = u32::try_from(todo.title.len()).expect("title length as u32");
+                orders.after_next_render(move |_| {
+                    let input_element = input_element.get().expect("input_element");
+
+                    input_element
+                        .focus()
+                        .expect("focus input_element");
+                        
+                    input_element
+                        .set_selection_range(title_length, title_length)
+                        .expect("move cursor to the end of input_element");
+                });
+            }
+        },
+        Msg::SelectTodo(None) => {
+            model.selected_todo = None;
         },
         Msg::SelectedTodoTitleChanged(title) => {
             if let Some(selected_todo) = &mut model.selected_todo {
@@ -242,9 +268,12 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
                 div![C!["view"],
                     input![C!["toggle"], 
                         attrs!{At::Type => "checkbox", At::Checked => todo.completed.as_at_value()},
-                        ev(Ev::Change, move |_| Msg::ToggleTodo(id))
+                        ev(Ev::Change, move |_| Msg::ToggleTodo(id)),
                     ],
-                    label![&todo.title],
+                    label![
+                        &todo.title,
+                        ev(Ev::DblClick, move |_| Msg::SelectTodo(Some(id))),
+                    ],
                     button![C!["destroy"],
                         ev(Ev::Click, move |_| Msg::RemoveTodo(id))
                     ],
@@ -255,6 +284,9 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
                         el_ref(&selected_todo.input_element), 
                         attrs!{At::Value => selected_todo.title},
                         input_ev(Ev::Input, Msg::SelectedTodoTitleChanged),
+                        keyboard_ev(Ev::KeyDown, |keyboard_event| {
+                            IF!(keyboard_event.key() == ESCAPE_KEY => Msg::SelectTodo(None))
+                        }),
                     ]
                 }),
             ]
