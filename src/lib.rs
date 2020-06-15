@@ -26,7 +26,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         selected_todo: None,
         filter: Filter::All,
         base_url: Url::new(),
-    }.add_mock_data()
+    }
 }
 
 // ------ ------
@@ -39,34 +39,6 @@ struct Model {
     selected_todo: Option<SelectedTodo>,
     filter: Filter,
     base_url: Url,
-}
-
-// TODO: Remove
-impl Model {
-    fn add_mock_data(mut self) -> Self {
-        let (id_a, id_b) = (Ulid::new(), Ulid::new());
-        
-        self.todos.insert(id_a, Todo {
-            id: id_a,
-            title: "I'm todo A".to_owned(),
-            completed: false,
-        });
-
-        self.todos.insert(id_b, Todo {
-            id: id_b,
-            title: "I'm todo B".to_owned(),
-            completed: true,
-        });
-
-        self.new_todo_title = "I'm a new todo title".to_owned();
-
-        self.selected_todo = Some(SelectedTodo {
-            id: id_b,
-            title: "I'm better todo B".to_owned(),
-            input_element: ElRef::new(),
-        });
-        self
-    }
 }
 
 struct Todo {
