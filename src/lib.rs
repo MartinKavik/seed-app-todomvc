@@ -166,7 +166,9 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             log!("SelectTodo", opt_id);
         },
         Msg::SelectedTodoTitleChanged(title) => {
-            log!("SelectedTodoTitleChanged", title);
+            if let Some(selected_todo) = &mut model.selected_todo {
+                selected_todo.title = title;
+            }
         },
         Msg::SaveSelectedTodo => {
             log!("SaveSelectedTodo");
@@ -252,6 +254,7 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
                     input![C!["edit"], 
                         el_ref(&selected_todo.input_element), 
                         attrs!{At::Value => selected_todo.title},
+                        input_ev(Ev::Input, Msg::SelectedTodoTitleChanged),
                     ]
                 }),
             ]
