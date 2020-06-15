@@ -147,7 +147,10 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         // ------ Bulk operations ------
 
         Msg::CheckOrUncheckAll => {
-            log!("CheckOrUncheckAll");
+            let all_checked = model.todos.values().all(|todo| todo.completed);
+            for todo in model.todos.values_mut() {
+                todo.completed = not(all_checked);
+            }
         }
         Msg::ClearCompleted => {
             // TODO: Refactor with `BTreeMap::drain_filter` once stable.
@@ -219,7 +222,8 @@ fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
         input![C!["toggle-all"], 
             attrs!{
                 At::Id => "toggle-all", At::Type => "checkbox", At::Checked => all_completed.as_at_value()
-            }
+            },
+            ev(Ev::Change, |_| Msg::CheckOrUncheckAll),
         ],
         label![attrs!{At::For => "toggle-all"}, "Mark all as complete"],
     ]
