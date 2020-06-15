@@ -10,6 +10,8 @@ use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
 use ulid::Ulid;
 
+const ENTER_KEY: &str = "Enter";
+
 // ------ ------
 //     Init
 // ------ ------
@@ -121,7 +123,16 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         // ------ Basic Todo operations ------
 
         Msg::CreateTodo => {
-            log!("CreateTodo");
+            let title = model.new_todo_title.trim();
+            if not(title.is_empty()) {
+                let id = Ulid::new();
+                model.todos.insert(id, Todo {
+                    id,
+                    title: title.to_owned(),
+                    completed: false,
+                });
+                model.new_todo_title.clear();
+            }
         }
         Msg::ToggleTodo(id) => {
             if let Some(todo) = model.todos.get_mut(&id) {
@@ -181,6 +192,9 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
                 At::Value => new_todo_title,
             },
             input_ev(Ev::Input, Msg::NewTodoTitleChanged),
+            keyboard_ev(Ev::KeyDown, |keyboard_event| {
+                IF!(keyboard_event.key() == ENTER_KEY => Msg::CreateTodo)
+            }),
         ]
     ]
 }
