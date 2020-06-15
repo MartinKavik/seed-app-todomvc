@@ -92,15 +92,18 @@ enum Msg {
     NewTodoTitleChanged(String),
  
     // ------ Basic Todo operations ------
+
     CreateTodo,
     ToggleTodo(Ulid),
     RemoveTodo(Ulid),
     
     // ------ Bulk operations ------
+
     CheckOrUncheckAll,
     ClearCompleted,
     
     // ------ Selection ------
+    
     SelectTodo(Option<Ulid>),
     SelectedTodoTitleChanged(String),
     SaveSelectedTodo,
@@ -116,6 +119,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         }
      
         // ------ Basic Todo operations ------
+
         Msg::CreateTodo => {
             log!("CreateTodo");
         }
@@ -129,6 +133,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         }
         
         // ------ Bulk operations ------
+
         Msg::CheckOrUncheckAll => {
             log!("CheckOrUncheckAll");
         }
@@ -137,6 +142,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
         }
         
         // ------ Selection ------
+
         Msg::SelectTodo(opt_id) => {
             log!("SelectTodo", opt_id);
         },
