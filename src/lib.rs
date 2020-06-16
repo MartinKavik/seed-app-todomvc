@@ -22,20 +22,14 @@ const STORAGE_KEY: &str = "todos-seed";
 //     Init
 // ------ ------
 
-fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
+fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.subscribe(Msg::UrlChanged);
-
-    let filter = match url.remaining_hash_path_parts().as_slice() {
-        ["active"] => Filter::Active,
-        ["completed"] => Filter::Completed,
-        _ => Filter::All,
-    };
 
     Model {
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
         new_todo_title: String::new(),
         selected_todo: None,
-        filter,
+        filter: Filter::from(url),
         base_url: Url::new(),
     }
 }
@@ -65,11 +59,23 @@ struct SelectedTodo {
     input_element: ElRef<web_sys::HtmlInputElement>,
 }
 
+// ------ Filter ------
+
 #[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
 enum Filter {
    All,
    Active,
    Completed,
+}
+
+impl From<Url> for Filter {
+    fn from(mut url: Url) -> Self {
+        match url.remaining_hash_path_parts().as_slice() {
+            ["active"] => Self::Active,
+            ["completed"] => Self::Completed,
+            _ => Self::All,
+        }
+    }
 }
 
 // ------ ------
@@ -100,12 +106,8 @@ enum Msg {
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::UrlChanged(subs::UrlChanged(mut url)) => {
-            model.filter = match url.remaining_hash_path_parts().as_slice() {
-                ["active"] => Filter::Active,
-                ["completed"] => Filter::Completed,
-                _ => Filter::All,
-            };
+        Msg::UrlChanged(subs::UrlChanged(url)) => {
+            model.filter = Filter::from(url);
         }
         Msg::NewTodoTitleChanged(title) => {
             model.new_todo_title = title;
