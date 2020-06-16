@@ -30,11 +30,11 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.subscribe(Msg::UrlChanged);
 
     Model {
+        base_url: url.to_hash_base_url(),
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
         new_todo_title: String::new(),
         selected_todo: None,
         filter: Filter::from(url),
-        base_url: Url::new(),
     }
 }
 
@@ -43,11 +43,11 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 // ------ ------
 
 struct Model {
+    base_url: Url,
     todos: BTreeMap<Ulid, Todo>,
     new_todo_title: String,
     selected_todo: Option<SelectedTodo>,
     filter: Filter,
-    base_url: Url,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -79,6 +79,23 @@ impl From<Url> for Filter {
             [COMPLETED] => Self::Completed,
             _ => Self::All,
         }
+    }
+}
+
+// ------ ------
+//     Urls
+// ------ ------
+
+struct_urls!();
+impl<'a> Urls<'a> {
+    pub fn home(self) -> Url {
+        self.base_url()
+    }
+    pub fn active(self) -> Url {
+        self.base_url().add_hash_path_part(ACTIVE)
+    }
+    pub fn completed(self) -> Url {
+        self.base_url().add_hash_path_part(COMPLETED)
     }
 }
 
@@ -210,7 +227,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
         view_header(&model.new_todo_title),
         IF!(not(model.todos.is_empty()) => vec![
             view_main(&model.todos, model.selected_todo.as_ref(), model.filter), 
-            view_footer(&model.todos, model.filter),
+            view_footer(&model.todos, model.filter, &model.base_url),
         ]),
     ]
 }
@@ -307,7 +324,7 @@ fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedT
 
 // ------ footer ------
 
-fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter) -> Node<Msg> {
+fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: &Url) -> Node<Msg> {
     let completed_count = todos.values().filter(|todo| todo.completed).count();
     let active_count = todos.len() - completed_count;
 
@@ -316,7 +333,7 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter) -> Node<Ms
             strong![active_count],
             format!(" item{} left", if active_count == 1 { "" } else { "s" }),
         ],
-        view_filters(selected_filter),
+        view_filters(selected_filter, base_url),
         IF!(completed_count > 0 =>
             button![C!["clear-completed"],
                 "Clear completed",
@@ -326,17 +343,20 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter) -> Node<Ms
     ]
 }
 
-fn view_filters(selected_filter: Filter) -> Node<Msg> {
+fn view_filters(selected_filter: Filter, base_url: &Url) -> Node<Msg> {
     ul![C!["filters"],
         Filter::iter().map(|filter| {
-            let (path, title) = match filter {
-                Filter::All => ("", "All"),
-                Filter::Active => (ACTIVE, "Active"),
-                Filter::Completed => (COMPLETED, "Completed"),
+            let urls = Urls::new(base_url);
+
+            let (url, title) = match filter {
+                Filter::All => (urls.home(), "All"),
+                Filter::Active => (urls.active(), "Active"),
+                Filter::Completed => (urls.completed(), "Completed"),
             };
+
             li![
                 a![C![IF!(filter == selected_filter => "selected")],
-                    attrs!{At::Href => format!("#/{}", path)},
+                    attrs!{At::Href => url},
                     title,
                 ],
             ]
