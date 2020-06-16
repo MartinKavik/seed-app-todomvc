@@ -22,18 +22,14 @@ const STORAGE_KEY: &str = "todos-seed";
 //     Init
 // ------ ------
 
-fn init(mut url: Url, _: &mut impl Orders<Msg>) -> Model {
-    // TODO: Remove
-    log!(url);
+fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
+    orders.subscribe(|_: subs::UrlChanged| log!("url changed!"));
 
     let filter = match url.remaining_hash_path_parts().as_slice() {
         ["active"] => Filter::Active,
         ["completed"] => Filter::Completed,
         _ => Filter::All,
     };
-
-    // TODO: Remove
-    log!(url);
 
     Model {
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
