@@ -18,6 +18,10 @@ const ESCAPE_KEY: &str = "Escape";
 
 const STORAGE_KEY: &str = "todos-seed";
 
+// ------ Url path parts ------
+const ACTIVE: &str = "active";
+const COMPLETED: &str = "completed";
+
 // ------ ------
 //     Init
 // ------ ------
@@ -71,8 +75,8 @@ enum Filter {
 impl From<Url> for Filter {
     fn from(mut url: Url) -> Self {
         match url.remaining_hash_path_parts().as_slice() {
-            ["active"] => Self::Active,
-            ["completed"] => Self::Completed,
+            [ACTIVE] => Self::Active,
+            [COMPLETED] => Self::Completed,
             _ => Self::All,
         }
     }
@@ -325,14 +329,14 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter) -> Node<Ms
 fn view_filters(selected_filter: Filter) -> Node<Msg> {
     ul![C!["filters"],
         Filter::iter().map(|filter| {
-            let (link, title) = match filter {
-                Filter::All => ("#/", "All"),
-                Filter::Active => ("#/active", "Active"),
-                Filter::Completed => ("#/completed", "Completed"),
+            let (path, title) = match filter {
+                Filter::All => ("", "All"),
+                Filter::Active => (ACTIVE, "Active"),
+                Filter::Completed => (COMPLETED, "Completed"),
             };
             li![
                 a![C![IF!(filter == selected_filter => "selected")],
-                    attrs!{At::Href => link},
+                    attrs!{At::Href => format!("#/{}", path)},
                     title,
                 ],
             ]
