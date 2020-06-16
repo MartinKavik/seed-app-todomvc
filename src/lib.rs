@@ -26,9 +26,9 @@ fn init(mut url: Url, _: &mut impl Orders<Msg>) -> Model {
     // TODO: Remove
     log!(url);
 
-    let filter = match url.next_hash_path_part(){
-        Some("active") => Filter::Active,
-        Some("completed") => Filter::Completed,
+    let filter = match url.remaining_hash_path_parts().as_slice() {
+        ["active"] => Filter::Active,
+        ["completed"] => Filter::Completed,
         _ => Filter::All,
     };
 
