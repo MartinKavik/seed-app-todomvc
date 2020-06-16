@@ -100,8 +100,12 @@ enum Msg {
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::UrlChanged(subs::UrlChanged(url)) => {
-            log!("UrlChanged", url);
+        Msg::UrlChanged(subs::UrlChanged(mut url)) => {
+            model.filter = match url.remaining_hash_path_parts().as_slice() {
+                ["active"] => Filter::Active,
+                ["completed"] => Filter::Completed,
+                _ => Filter::All,
+            };
         }
         Msg::NewTodoTitleChanged(title) => {
             model.new_todo_title = title;
