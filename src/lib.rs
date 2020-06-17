@@ -1,6 +1,4 @@
 #![allow(clippy::wildcard_imports)]
-// TODO: Remove
-#![allow(dead_code, unused_variables)]
 
 use seed::{prelude::*, *};
 
