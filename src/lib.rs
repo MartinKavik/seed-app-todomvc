@@ -3,12 +3,12 @@
 use seed::{prelude::*, *};
 
 use std::collections::BTreeMap;
-use std::mem;
 use std::convert::TryFrom;
+use std::mem;
 
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use ulid::Ulid;
 
 const ENTER_KEY: &str = "Enter";
@@ -65,9 +65,9 @@ struct SelectedTodo {
 
 #[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
 enum Filter {
-   All,
-   Active,
-   Completed,
+    All,
+    Active,
+    Completed,
 }
 
 impl From<Url> for Filter {
@@ -104,24 +104,21 @@ impl<'a> Urls<'a> {
 enum Msg {
     UrlChanged(subs::UrlChanged),
     NewTodoTitleChanged(String),
- 
-    // ------ Basic Todo operations ------
 
+    // ------ Basic Todo operations ------
     CreateTodo,
     ToggleTodo(Ulid),
     RemoveTodo(Ulid),
-    
-    // ------ Bulk operations ------
 
+    // ------ Bulk operations ------
     CheckOrUncheckAll,
     ClearCompleted,
-    
+
     // ------ Selection ------
-    
     SelectTodo(Option<Ulid>),
     SelectedTodoTitleChanged(String),
     SaveSelectedTodo,
- }
+}
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
@@ -131,18 +128,20 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::NewTodoTitleChanged(title) => {
             model.new_todo_title = title;
         }
-     
-        // ------ Basic Todo operations ------
 
+        // ------ Basic Todo operations ------
         Msg::CreateTodo => {
             let title = model.new_todo_title.trim();
             if not(title.is_empty()) {
                 let id = Ulid::new();
-                model.todos.insert(id, Todo {
+                model.todos.insert(
                     id,
-                    title: title.to_owned(),
-                    completed: false,
-                });
+                    Todo {
+                        id,
+                        title: title.to_owned(),
+                        completed: false,
+                    },
+                );
                 model.new_todo_title.clear();
             }
         }
@@ -154,9 +153,8 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::RemoveTodo(id) => {
             model.todos.remove(&id);
         }
-        
-        // ------ Bulk operations ------
 
+        // ------ Bulk operations ------
         Msg::CheckOrUncheckAll => {
             let all_checked = model.todos.values().all(|todo| todo.completed);
             for todo in model.todos.values_mut() {
@@ -170,13 +168,12 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 .filter(|(_, todo)| not(todo.completed))
                 .collect();
         }
-        
-        // ------ Selection ------
 
+        // ------ Selection ------
         Msg::SelectTodo(Some(id)) => {
             if let Some(todo) = model.todos.get(&id) {
                 let input_element = ElRef::new();
-                
+
                 model.selected_todo = Some(SelectedTodo {
                     id,
                     title: todo.title.clone(),
@@ -187,24 +184,22 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.after_next_render(move |_| {
                     let input_element = input_element.get().expect("input_element");
 
-                    input_element
-                        .focus()
-                        .expect("focus input_element");
+                    input_element.focus().expect("focus input_element");
 
                     input_element
                         .set_selection_range(title_length, title_length)
                         .expect("move cursor to the end of input_element");
                 });
             }
-        },
+        }
         Msg::SelectTodo(None) => {
             model.selected_todo = None;
-        },
+        }
         Msg::SelectedTodoTitleChanged(title) => {
             if let Some(selected_todo) = &mut model.selected_todo {
                 selected_todo.title = title;
             }
-        },
+        }
         Msg::SaveSelectedTodo => {
             if let Some(selected_todo) = model.selected_todo.take() {
                 if let Some(todo) = model.todos.get_mut(&selected_todo.id) {
@@ -224,7 +219,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(&model.new_todo_title),
         IF!(not(model.todos.is_empty()) => vec![
-            view_main(&model.todos, model.selected_todo.as_ref(), model.filter), 
+            view_main(&model.todos, model.selected_todo.as_ref(), model.filter),
             view_footer(&model.todos, model.filter, &model.base_url),
         ]),
     ]
@@ -233,11 +228,13 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
 // ------ header ------
 
 fn view_header(new_todo_title: &str) -> Node<Msg> {
-    header![C!["header"],
+    header![
+        C!["header"],
         h1!["todos"],
-        input![C!["new-todo"],
-            attrs!{
-                At::Placeholder => "What needs to be done?", 
+        input![
+            C!["new-todo"],
+            attrs! {
+                At::Placeholder => "What needs to be done?",
                 At::AutoFocus => AtValue::None,
                 At::Value => new_todo_title,
             },
@@ -251,8 +248,13 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 
 // ------ main ------
 
-fn view_main(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>, filter: Filter) -> Node<Msg> {
-    section![C!["main"],
+fn view_main(
+    todos: &BTreeMap<Ulid, Todo>,
+    selected_todo: Option<&SelectedTodo>,
+    filter: Filter,
+) -> Node<Msg> {
+    section![
+        C!["main"],
         view_toggle_all(todos),
         view_todo_list(todos, selected_todo, filter),
     ]
@@ -261,23 +263,28 @@ fn view_main(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>,
 fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
     let all_completed = todos.values().all(|todo| todo.completed);
     vec![
-        input![C!["toggle-all"], 
-            attrs!{
+        input![
+            C!["toggle-all"],
+            attrs! {
                 At::Id => "toggle-all", At::Type => "checkbox", At::Checked => all_completed.as_at_value()
             },
             ev(Ev::Change, |_| Msg::CheckOrUncheckAll),
         ],
-        label![attrs!{At::For => "toggle-all"}, "Mark all as complete"],
+        label![attrs! {At::For => "toggle-all"}, "Mark all as complete"],
     ]
 }
 
-fn view_todo_list(todos: &BTreeMap<Ulid, Todo>, selected_todo: Option<&SelectedTodo>, filter: Filter) -> Node<Msg> {
-    let todos = todos.values().filter(|todo| {
-        match filter {
-            Filter::All => true,
-            Filter::Active => not(todo.completed),
-            Filter::Completed => todo.completed,
-        }
+// TODO: Remove once rustfmt is updated.
+#[rustfmt::skip]
+fn view_todo_list(
+    todos: &BTreeMap<Ulid, Todo>,
+    selected_todo: Option<&SelectedTodo>,
+    filter: Filter,
+) -> Node<Msg> {
+    let todos = todos.values().filter(|todo| match filter {
+        Filter::All => true,
+        Filter::Active => not(todo.completed),
+        Filter::Completed => todo.completed,
     });
     ul![C!["todo-list"],
         todos.map(|todo| {
@@ -326,8 +333,10 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: 
     let completed_count = todos.values().filter(|todo| todo.completed).count();
     let active_count = todos.len() - completed_count;
 
-    footer![C!["footer"],
-        span![C!["todo-count"],
+    footer![
+        C!["footer"],
+        span![
+            C!["todo-count"],
             strong![active_count],
             format!(" item{} left", if active_count == 1 { "" } else { "s" }),
         ],
@@ -342,7 +351,8 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: 
 }
 
 fn view_filters(selected_filter: Filter, base_url: &Url) -> Node<Msg> {
-    ul![C!["filters"],
+    ul![
+        C!["filters"],
         Filter::iter().map(|filter| {
             let urls = Urls::new(base_url);
 
@@ -352,12 +362,11 @@ fn view_filters(selected_filter: Filter, base_url: &Url) -> Node<Msg> {
                 Filter::Completed => (urls.completed(), "Completed"),
             };
 
-            li![
-                a![C![IF!(filter == selected_filter => "selected")],
-                    attrs!{At::Href => url},
-                    title,
-                ],
-            ]
+            li![a![
+                C![IF!(filter == selected_filter => "selected")],
+                attrs! {At::Href => url},
+                title,
+            ],]
         })
     ]
 }
@@ -369,7 +378,7 @@ fn view_filters(selected_filter: Filter, base_url: &Url) -> Node<Msg> {
 #[wasm_bindgen(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
-    
+
     let root_element = document()
         .get_elements_by_class_name("todoapp")
         .item(0)
