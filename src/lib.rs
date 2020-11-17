@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::mem;
 
+use seed_routing::*;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -16,23 +17,19 @@ const ESCAPE_KEY: &str = "Escape";
 
 const STORAGE_KEY: &str = "todos-seed";
 
-// ------ Url path parts ------
-const ACTIVE: &str = "active";
-const COMPLETED: &str = "completed";
-
 // ------ ------
 //     Init
 // ------ ------
 
 fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.subscribe(Msg::UrlChanged);
-
+    let mut router: Router<Routes> = Router::new();
+    router.init_url_and_navigation(url);
     Model {
-        base_url: url.to_hash_base_url(),
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
         new_todo_title: String::new(),
         selected_todo: None,
-        filter: Filter::from(url),
+        router,
     }
 }
 
@@ -41,11 +38,10 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 // ------ ------
 
 struct Model {
-    base_url: Url,
+    router: Router<Routes>,
     todos: BTreeMap<Ulid, Todo>,
     new_todo_title: String,
     selected_todo: Option<SelectedTodo>,
-    filter: Filter,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -61,40 +57,14 @@ struct SelectedTodo {
     input_element: ElRef<web_sys::HtmlInputElement>,
 }
 
-// ------ Filter ------
-
-#[derive(Copy, Clone, Eq, PartialEq, EnumIter)]
-enum Filter {
-    All,
+#[derive(Copy, Debug, Clone, Eq, PartialEq, AsUrl, Root, EnumIter)]
+enum Routes {
     Active,
     Completed,
-}
-
-impl From<Url> for Filter {
-    fn from(mut url: Url) -> Self {
-        match url.remaining_hash_path_parts().as_slice() {
-            [ACTIVE] => Self::Active,
-            [COMPLETED] => Self::Completed,
-            _ => Self::All,
-        }
-    }
-}
-
-// ------ ------
-//     Urls
-// ------ ------
-
-struct_urls!();
-impl<'a> Urls<'a> {
-    pub fn home(self) -> Url {
-        self.base_url()
-    }
-    pub fn active(self) -> Url {
-        self.base_url().add_hash_path_part(ACTIVE)
-    }
-    pub fn completed(self) -> Url {
-        self.base_url().add_hash_path_part(COMPLETED)
-    }
+    #[default_route]
+    NotFound,
+    #[as_path = ""]
+    All,
 }
 
 // ------ ------
@@ -123,7 +93,7 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::UrlChanged(subs::UrlChanged(url)) => {
-            model.filter = Filter::from(url);
+            model.router.confirm_navigation(url);
         }
         Msg::NewTodoTitleChanged(title) => {
             model.new_todo_title = title;
@@ -216,13 +186,25 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
-    nodes![
-        view_header(&model.new_todo_title),
-        IF!(not(model.todos.is_empty()) => vec![
-            view_main(&model.todos, model.selected_todo.as_ref(), model.filter),
-            view_footer(&model.todos, model.filter, &model.base_url),
-        ]),
-    ]
+    if model.router.current_route.unwrap() == model.router.default_route {
+        vec![div![
+            "page not found ",
+            br![],
+            C!["view"],
+            a![
+                "Click me to find your items! ",
+                attrs! {At::Href => Routes::All.to_url()},
+            ]
+        ]]
+    } else {
+        nodes![
+            view_header(&model.new_todo_title),
+            IF!(not(model.todos.is_empty()) => vec![
+                view_main(&model.todos, model.selected_todo.as_ref(), model.router.current_route.unwrap()),
+                view_footer(&model.todos, &model.router),
+            ])
+        ]
+    }
 }
 
 // ------ header ------
@@ -251,12 +233,12 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 fn view_main(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    filter: Filter,
+    route: Routes,
 ) -> Node<Msg> {
     section![
         C!["main"],
         view_toggle_all(todos),
-        view_todo_list(todos, selected_todo, filter),
+        view_todo_list(todos, selected_todo, route),
     ]
 }
 
@@ -279,12 +261,13 @@ fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
 fn view_todo_list(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    filter: Filter,
+    route: Routes,
 ) -> Node<Msg> {
-    let todos = todos.values().filter(|todo| match filter {
-        Filter::All => true,
-        Filter::Active => not(todo.completed),
-        Filter::Completed => todo.completed,
+    let todos = todos.values().filter(|todo| match route {
+        Routes::All => true,
+        Routes::Active => not(todo.completed),
+        Routes::Completed => todo.completed,
+        Routes::NotFound => true
     });
     ul![C!["todo-list"],
         todos.map(|todo| {
@@ -329,7 +312,7 @@ fn view_todo_list(
 
 // ------ footer ------
 
-fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: &Url) -> Node<Msg> {
+fn view_footer(todos: &BTreeMap<Ulid, Todo>, router: &Router<Routes>) -> Node<Msg> {
     let completed_count = todos.values().filter(|todo| todo.completed).count();
     let active_count = todos.len() - completed_count;
 
@@ -340,7 +323,7 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: 
             strong![active_count],
             format!(" item{} left", if active_count == 1 { "" } else { "s" }),
         ],
-        view_filters(selected_filter, base_url),
+        view_filters(router),
         IF!(completed_count > 0 =>
             button![C!["clear-completed"],
                 "Clear completed",
@@ -350,24 +333,24 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, selected_filter: Filter, base_url: 
     ]
 }
 
-fn view_filters(selected_filter: Filter, base_url: &Url) -> Node<Msg> {
+fn view_filters(router: &Router<Routes>) -> Node<Msg> {
     ul![
         C!["filters"],
-        Filter::iter().map(|filter| {
-            let urls = Urls::new(base_url);
-
-            let (url, title) = match filter {
-                Filter::All => (urls.home(), "All"),
-                Filter::Active => (urls.active(), "Active"),
-                Filter::Completed => (urls.completed(), "Completed"),
-            };
-
-            li![a![
-                C![IF!(filter == selected_filter => "selected")],
-                attrs! {At::Href => url},
-                title,
-            ],]
-        })
+        Routes::iter()
+            .filter(|route| route != &Routes::NotFound)
+            .map(|filter| {
+                let title = match filter {
+                    Routes::All => "All",
+                    Routes::Active => "Active",
+                    Routes::Completed => "Completed",
+                    Routes::NotFound => "",
+                };
+                li![a![
+                    C![IF!(filter == router.current_route.unwrap() => "selected")],
+                    attrs! {At::Href => filter.to_url()},
+                    title,
+                ],]
+            })
     ]
 }
 
