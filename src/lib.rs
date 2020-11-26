@@ -8,8 +8,8 @@ use std::mem;
 
 use seed_routing::*;
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use strum::IntoEnumIterator;
 use ulid::Ulid;
 
 const ENTER_KEY: &str = "Enter";
@@ -17,19 +17,22 @@ const ESCAPE_KEY: &str = "Escape";
 
 const STORAGE_KEY: &str = "todos-seed";
 
+add_router!();
 // ------ ------
 //     Init
 // ------ ------
 
 fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
-    orders.subscribe(Msg::UrlChanged);
-    let mut router: Router<Routes> = Router::new();
-    router.init_url_and_navigation(url);
+    router()
+        .init(url)
+        .set_handler(orders, move |subs::UrlRequested(requested_url, _)| {
+            router().confirm_navigation(requested_url)
+        });
+
     Model {
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
         new_todo_title: String::new(),
         selected_todo: None,
-        router,
     }
 }
 
@@ -38,7 +41,6 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 // ------ ------
 
 struct Model {
-    router: Router<Routes>,
     todos: BTreeMap<Ulid, Todo>,
     new_todo_title: String,
     selected_todo: Option<SelectedTodo>,
@@ -58,7 +60,7 @@ struct SelectedTodo {
 }
 
 #[derive(Copy, Debug, Clone, Eq, PartialEq, AsUrl, Root, EnumIter)]
-enum Routes {
+enum Route {
     Active,
     Completed,
     #[default_route]
@@ -72,7 +74,6 @@ enum Routes {
 // ------ ------
 
 enum Msg {
-    UrlChanged(subs::UrlChanged),
     NewTodoTitleChanged(String),
 
     // ------ Basic Todo operations ------
@@ -92,13 +93,9 @@ enum Msg {
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::UrlChanged(subs::UrlChanged(url)) => {
-            model.router.confirm_navigation(url);
-        }
         Msg::NewTodoTitleChanged(title) => {
             model.new_todo_title = title;
         }
-
         // ------ Basic Todo operations ------
         Msg::CreateTodo => {
             let title = model.new_todo_title.trim();
@@ -186,22 +183,22 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
-    if model.router.current_route.unwrap() == model.router.default_route {
+    if router().current_route() == router().default_route() {
         vec![div![
             "page not found ",
             br![],
             C!["view"],
             a![
                 "Click me to find your items! ",
-                attrs! {At::Href => Routes::All.to_url()},
+                attrs! {At::Href => Route::All.to_url()},
             ]
         ]]
     } else {
         nodes![
             view_header(&model.new_todo_title),
             IF!(not(model.todos.is_empty()) => vec![
-                view_main(&model.todos, model.selected_todo.as_ref(), model.router.current_route.unwrap()),
-                view_footer(&model.todos, &model.router),
+                view_main(&model.todos, model.selected_todo.as_ref(), router().current_route()),
+                view_footer(&model.todos),
             ])
         ]
     }
@@ -233,7 +230,7 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 fn view_main(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    route: Routes,
+    route: Route,
 ) -> Node<Msg> {
     section![
         C!["main"],
@@ -261,13 +258,13 @@ fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
 fn view_todo_list(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    route: Routes,
+    route: Route,
 ) -> Node<Msg> {
     let todos = todos.values().filter(|todo| match route {
-        Routes::All => true,
-        Routes::Active => not(todo.completed),
-        Routes::Completed => todo.completed,
-        Routes::NotFound => true
+        Route::All => true,
+        Route::Active => not(todo.completed),
+        Route::Completed => todo.completed,
+        Route::NotFound => true
     });
     ul![C!["todo-list"],
         todos.map(|todo| {
@@ -312,7 +309,7 @@ fn view_todo_list(
 
 // ------ footer ------
 
-fn view_footer(todos: &BTreeMap<Ulid, Todo>, router: &Router<Routes>) -> Node<Msg> {
+fn view_footer(todos: &BTreeMap<Ulid, Todo>) -> Node<Msg> {
     let completed_count = todos.values().filter(|todo| todo.completed).count();
     let active_count = todos.len() - completed_count;
 
@@ -323,7 +320,7 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, router: &Router<Routes>) -> Node<Ms
             strong![active_count],
             format!(" item{} left", if active_count == 1 { "" } else { "s" }),
         ],
-        view_filters(router),
+        view_filters(),
         IF!(completed_count > 0 =>
             button![C!["clear-completed"],
                 "Clear completed",
@@ -333,20 +330,20 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>, router: &Router<Routes>) -> Node<Ms
     ]
 }
 
-fn view_filters(router: &Router<Routes>) -> Node<Msg> {
+fn view_filters() -> Node<Msg> {
     ul![
         C!["filters"],
-        Routes::iter()
-            .filter(|route| route != &Routes::NotFound)
+        Route::iter()
+            .filter(|route| route != &Route::NotFound)
             .map(|filter| {
                 let title = match filter {
-                    Routes::All => "All",
-                    Routes::Active => "Active",
-                    Routes::Completed => "Completed",
-                    Routes::NotFound => "",
+                    Route::All => "All",
+                    Route::Active => "Active",
+                    Route::Completed => "Completed",
+                    Route::NotFound => "",
                 };
                 li![a![
-                    C![IF!(filter == router.current_route.unwrap() => "selected")],
+                    C![IF!(filter == router().current_route() => "selected")],
                     attrs! {At::Href => filter.to_url()},
                     title,
                 ],]
