@@ -1,0 +1,7 @@
+# This defines which directories would be loaded into playground from Github
+# default would be only "src" folder, but we need to configure to load css folder
+# as well
+directories: [
+  "src",
+  "css"
+]
