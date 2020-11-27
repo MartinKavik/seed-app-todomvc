@@ -59,7 +59,7 @@ struct SelectedTodo {
     input_element: ElRef<web_sys::HtmlInputElement>,
 }
 
-#[derive(Copy, Debug, Clone, Eq, PartialEq, AsUrl, Root, EnumIter)]
+#[derive(Copy, Debug, Clone, Eq, PartialEq, ParseUrl, Root, EnumIter)]
 enum Route {
     Active,
     Completed,
