@@ -183,7 +183,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
-    if router().current_route() == router().default_route() {
+    if router().current_route().is_default() {
         vec![div![
             "page not found ",
             br![],
