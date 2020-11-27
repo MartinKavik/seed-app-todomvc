@@ -264,7 +264,7 @@ fn view_todo_list(
         Route::All => true,
         Route::Active => not(todo.completed),
         Route::Completed => todo.completed,
-        Route::NotFound => true
+        Route::NotFound => panic!("Not todo list when page has not been found")
     });
     ul![C!["todo-list"],
         todos.map(|todo| {
