@@ -8,8 +8,8 @@ use std::mem;
 
 use seed_routing::*;
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use ulid::Ulid;
 
 const ENTER_KEY: &str = "Enter";
@@ -333,21 +333,23 @@ fn view_footer(todos: &BTreeMap<Ulid, Todo>) -> Node<Msg> {
 fn view_filters() -> Node<Msg> {
     ul![
         C!["filters"],
-        Route::iter()
-            .filter(|route| route != &Route::NotFound)
-            .map(|filter| {
-                let title = match filter {
-                    Route::All => "All",
-                    Route::Active => "Active",
-                    Route::Completed => "Completed",
-                    Route::NotFound => "",
-                };
-                li![a![
-                    C![IF!(filter == router().current_route() => "selected")],
-                    attrs! {At::Href => filter.to_url()},
-                    title,
-                ],]
-            })
+        Route::iter().filter_map(|route| {
+            let title = match route {
+                Route::All => Some("All"),
+                Route::Active => Some("Active"),
+                Route::Completed => Some("Completed"),
+                Route::NotFound => None, // or `return None`
+            };
+            if title.is_some() {
+                Some(li![a![
+                    C![IF!(route == router().current_route() => "selected")],
+                    attrs! {At::Href => route.to_url()},
+                    title.unwrap(),
+                ],])
+            } else {
+                None
+            }
+        })
     ]
 }
 
