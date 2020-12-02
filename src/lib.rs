@@ -340,11 +340,11 @@ fn view_filters() -> Node<Msg> {
                 Route::Completed => Some("Completed"),
                 Route::NotFound => return None, // or `return None`
             };
-                Some(li![a![
-                    C![IF!(route == router().current_route() => "selected")],
-                    attrs! {At::Href => route.to_url()},
-                    title.unwrap(),
-                ],])
+                title.map(|title| {
+                li![a![C![IF!(route == router().current_route() => "selected")],
+                attrs! {At::Href => route.to_url()},
+                title,]]
+            })
 
         })
     ]
