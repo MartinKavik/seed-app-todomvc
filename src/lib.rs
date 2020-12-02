@@ -197,7 +197,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
         nodes![
             view_header(&model.new_todo_title),
             IF!(not(model.todos.is_empty()) => vec![
-                view_main(&model.todos, model.selected_todo.as_ref(), router().current_route()),
+                view_main(&model.todos, model.selected_todo.as_ref()),
                 view_footer(&model.todos),
             ])
         ]
@@ -230,12 +230,11 @@ fn view_header(new_todo_title: &str) -> Node<Msg> {
 fn view_main(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    route: Route,
 ) -> Node<Msg> {
     section![
         C!["main"],
         view_toggle_all(todos),
-        view_todo_list(todos, selected_todo, route),
+        view_todo_list(todos, selected_todo),
     ]
 }
 
@@ -258,9 +257,8 @@ fn view_toggle_all(todos: &BTreeMap<Ulid, Todo>) -> Vec<Node<Msg>> {
 fn view_todo_list(
     todos: &BTreeMap<Ulid, Todo>,
     selected_todo: Option<&SelectedTodo>,
-    route: Route,
 ) -> Node<Msg> {
-    let todos = todos.values().filter(|todo| match route {
+    let todos = todos.values().filter(|todo| match router().current_route() {
         Route::All => true,
         Route::Active => not(todo.completed),
         Route::Completed => todo.completed,
