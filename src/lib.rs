@@ -338,17 +338,14 @@ fn view_filters() -> Node<Msg> {
                 Route::All => Some("All"),
                 Route::Active => Some("Active"),
                 Route::Completed => Some("Completed"),
-                Route::NotFound => None, // or `return None`
+                Route::NotFound => return None, // or `return None`
             };
-            if title.is_some() {
                 Some(li![a![
                     C![IF!(route == router().current_route() => "selected")],
                     attrs! {At::Href => route.to_url()},
                     title.unwrap(),
                 ],])
-            } else {
-                None
-            }
+
         })
     ]
 }
