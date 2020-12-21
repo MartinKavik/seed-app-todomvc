@@ -23,11 +23,12 @@ add_router!();
 // ------ ------
 
 fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
+
     router()
         .init(url)
-        .set_handler(orders, move |subs::UrlRequested(requested_url, _)| {
-            router().confirm_navigation(requested_url)
-        });
+        .subscribe(orders.subscribe_with_handle(
+        |subs::UrlRequested(requested_url, _)| router().confirm_navigation(requested_url),
+    ));
 
     Model {
         todos: LocalStorage::get(STORAGE_KEY).unwrap_or_default(),
